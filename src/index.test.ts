@@ -29,6 +29,7 @@
 
 import {assert, waitUntil} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
+import * as StarImport from './index.js';
 import EventEmitterDefault, {EventEmitter} from './index.js';
 
 describe('EventEmitter', () => {
@@ -45,7 +46,7 @@ describe('EventEmitter', () => {
     });
 
     it('exposes a module namespace object', () => {
-        assert.strictEquals(EventEmitter.EventEmitter, EventEmitter);
+        assert.strictEquals(StarImport.EventEmitter, EventEmitter);
     });
 
     it('works with ES6 symbols', () => {
