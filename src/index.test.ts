@@ -1,3 +1,6 @@
+/* eslint-disable unicorn/prefer-event-target */
+/* eslint-disable sonarjs/constructor-for-side-effects */
+
 /**
  * These tests are copied from
  * https://github.com/primus/eventemitter3/blob/4e76a51d4af66f318e7d6b4f1c250ff05a51ff90/test/test.js
@@ -28,6 +31,7 @@
  */
 
 import {assert, waitUntil} from '@augment-vir/assert';
+import {type AnyObject} from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
 import * as StarImport from './index.js';
 import EventEmitterDefault, {EventEmitter} from './index.js';
@@ -42,7 +46,7 @@ describe('EventEmitter', () => {
     });
 
     it('exposes a `prefixed` property', () => {
-        assert.isTrue(EventEmitter.prefixed === false || EventEmitter.prefixed === '~');
+        assert.isFalse(EventEmitter.prefixed);
     });
 
     it('exposes a module namespace object', () => {
@@ -50,45 +54,45 @@ describe('EventEmitter', () => {
     });
 
     it('works with ES6 symbols', () => {
-        var e = new EventEmitter(),
+        const emitter = new EventEmitter(),
             event = Symbol('cows'),
             unknown = Symbol('moo');
 
-        e.on(event, function listener(arg) {
-            assert.strictEquals(e.listenerCount(unknown), 0);
-            assert.deepEquals(e.listeners(unknown), []);
+        emitter.on(event, function listener(arg) {
+            assert.strictEquals(emitter.listenerCount(unknown), 0);
+            assert.deepEquals(emitter.listeners(unknown), []);
             assert.strictEquals(arg, 'bar');
 
-            function bar(onced) {
-                assert.strictEquals(e.listenerCount(unknown), 0);
-                assert.deepEquals(e.listeners(unknown), []);
-                assert.strictEquals(onced, 'foo');
+            function bar(arg: any) {
+                assert.strictEquals(emitter.listenerCount(unknown), 0);
+                assert.deepEquals(emitter.listeners(unknown), []);
+                assert.strictEquals(arg, 'foo');
             }
 
-            e.once(unknown, bar);
+            emitter.once(unknown, bar);
 
-            assert.strictEquals(e.listenerCount(event), 1);
-            assert.deepEquals(e.listeners(event), [listener]);
-            assert.strictEquals(e.listenerCount(unknown), 1);
-            assert.deepEquals(e.listeners(unknown), [bar]);
+            assert.strictEquals(emitter.listenerCount(event), 1);
+            assert.deepEquals(emitter.listeners(event), [listener]);
+            assert.strictEquals(emitter.listenerCount(unknown), 1);
+            assert.deepEquals(emitter.listeners(unknown), [bar]);
 
-            e.removeListener(event);
+            emitter.removeListener(event);
 
-            assert.strictEquals(e.listenerCount(event), 0);
-            assert.deepEquals(e.listeners(event), []);
-            assert.strictEquals(e.emit(unknown, 'foo'), true);
+            assert.strictEquals(emitter.listenerCount(event), 0);
+            assert.deepEquals(emitter.listeners(event), []);
+            assert.strictEquals(emitter.emit(unknown, 'foo'), true);
         });
 
-        assert.strictEquals(e.emit(unknown, 'bar'), false);
-        assert.strictEquals(e.emit(event, 'bar'), true);
+        assert.strictEquals(emitter.emit(unknown, 'bar'), false);
+        assert.strictEquals(emitter.emit(event, 'bar'), true);
     });
 
     describe('EventEmitter#emit', () => {
         it('should return false when there are not events to emit', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
-            assert.strictEquals(e.emit('foo'), false);
-            assert.strictEquals(e.emit('bar'), false);
+            assert.strictEquals(emitter.emit('foo'), false);
+            assert.strictEquals(emitter.emit('bar'), false);
         });
 
         it('emits with context', async () => {
@@ -103,7 +107,7 @@ describe('EventEmitter', () => {
             emitter
                 .on(
                     'foo',
-                    function (bar) {
+                    function (this: typeof context, bar) {
                         inner = {
                             bar,
                             context: this,
@@ -128,7 +132,7 @@ describe('EventEmitter', () => {
             emitter
                 .on(
                     'foo',
-                    function (bar) {
+                    function (this: typeof context, bar) {
                         inner = {
                             bar,
                             context: this,
@@ -142,104 +146,108 @@ describe('EventEmitter', () => {
         });
 
         it('can emit the function with multiple arguments', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
-            for (var i = 0; i < 100; i++) {
+            for (let i = 0; i < 100; i++) {
                 ((j) => {
-                    for (var i = 0, args = []; i < j; i++) {
+                    const args: number[] = [];
+                    for (let i = 0; i < j; i++) {
                         args.push(j);
                     }
 
-                    e.once('args', function () {
+                    emitter.once('args', function () {
                         assert.strictEquals(arguments.length, args.length);
                     });
 
-                    e.emit.apply(e, ['args'].concat(args));
+                    emitter.emit('args', ...args);
                 })(i);
             }
         });
 
         it('can emit the function with multiple arguments, multiple listeners', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
-            for (var i = 0; i < 100; i++) {
+            for (let i = 0; i < 100; i++) {
                 ((j) => {
-                    for (var i = 0, args = []; i < j; i++) {
+                    const args: number[] = [];
+                    for (let i = 0; i < j; i++) {
                         args.push(j);
                     }
 
-                    e.once('args', function () {
+                    emitter.once('args', function () {
                         assert.strictEquals(arguments.length, args.length);
                     });
 
-                    e.once('args', function () {
+                    emitter.once('args', function () {
                         assert.strictEquals(arguments.length, args.length);
                     });
 
-                    e.once('args', function () {
+                    emitter.once('args', function () {
                         assert.strictEquals(arguments.length, args.length);
                     });
 
-                    e.once('args', function () {
+                    emitter.once('args', function () {
                         assert.strictEquals(arguments.length, args.length);
                     });
 
-                    e.emit.apply(e, ['args'].concat(args));
+                    emitter.emit('args', ...args);
                 })(i);
             }
         });
 
         it('emits with context, multiple listeners (force loop)', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
-            e.on(
+            emitter.on(
                 'foo',
-                function (bar) {
+                function (this: AnyObject, bar) {
                     assert.deepEquals(this, {foo: 'bar'});
                     assert.strictEquals(bar, 'bar');
                 },
                 {foo: 'bar'},
             );
 
-            e.on(
+            emitter.on(
                 'foo',
-                function (bar) {
+                function (this: AnyObject, bar) {
                     assert.deepEquals(this, {bar: 'baz'});
                     assert.strictEquals(bar, 'bar');
                 },
                 {bar: 'baz'},
             );
 
-            e.emit('foo', 'bar');
+            emitter.emit('foo', 'bar');
         });
 
         it('emits with different contexts', () => {
-            var e = new EventEmitter(),
-                pattern = '';
+            const emitter = new EventEmitter();
+            let pattern = '';
 
-            function writer() {
+            function writer(this: string) {
+                // eslint-disable-next-line @typescript-eslint/no-this-alias
                 pattern += this;
             }
 
-            e.on('write', writer, 'foo');
-            e.on('write', writer, 'baz');
-            e.once('write', writer, 'bar');
-            e.once('write', writer, 'banana');
+            emitter.on('write', writer, 'foo');
+            emitter.on('write', writer, 'baz');
+            emitter.once('write', writer, 'bar');
+            emitter.once('write', writer, 'banana');
 
-            e.emit('write');
+            emitter.emit('write');
+            // cspell:ignore foobazbarbanana
             assert.strictEquals(pattern, 'foobazbarbanana');
         });
 
         it('should return true when there are events to emit', () => {
-            var e = new EventEmitter(),
-                called = 0;
+            const emitter = new EventEmitter();
+            let called = 0;
 
-            e.on('foo', () => {
+            emitter.on('foo', () => {
                 called++;
             });
 
-            assert.strictEquals(e.emit('foo'), true);
-            assert.strictEquals(e.emit('foob'), false);
+            assert.strictEquals(emitter.emit('foo'), true);
+            assert.strictEquals(emitter.emit('foo b'), false);
             assert.strictEquals(called, 1);
         });
 
@@ -255,6 +263,7 @@ describe('EventEmitter', () => {
                     c,
                     d,
                     undef,
+                    // eslint-disable-next-line prefer-rest-params
                     args: arguments,
                 };
             });
@@ -274,18 +283,18 @@ describe('EventEmitter', () => {
         });
 
         it('emits to all event listeners', () => {
-            var e = new EventEmitter(),
-                pattern = [];
+            const emitter = new EventEmitter();
+            const pattern: string[] = [];
 
-            e.on('foo', () => {
+            emitter.on('foo', () => {
                 pattern.push('foo1');
             });
 
-            e.on('foo', () => {
+            emitter.on('foo', () => {
                 pattern.push('foo2');
             });
 
-            e.emit('foo');
+            emitter.emit('foo');
 
             assert.strictEquals(pattern.join(';'), 'foo1;foo2');
         });
@@ -301,13 +310,15 @@ describe('EventEmitter', () => {
                     'unwatch',
                     'watch',
                 ].map(async (key) => {
-                    var e = new EventEmitter();
+                    const emitter = new EventEmitter();
 
                     let innerKey: any;
 
-                    e.on(key, (k) => {
-                        innerKey = k;
-                    }).emit(key, key);
+                    emitter
+                        .on(key, (k) => {
+                            innerKey = k;
+                        })
+                        .emit(key, key);
 
                     await waitUntil.strictEquals(key, () => innerKey);
                 }),
@@ -317,125 +328,125 @@ describe('EventEmitter', () => {
 
     describe('EventEmitter#listeners', () => {
         it('returns an empty array if no listeners are specified', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
-            assert.isArray(e.listeners('foo'));
-            assert.strictEquals(e.listeners('foo').length, 0);
+            assert.isArray(emitter.listeners('foo'));
+            assert.strictEquals(emitter.listeners('foo').length, 0);
         });
 
         it('returns an array of function', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
             function foo() {}
 
-            e.on('foo', foo);
-            assert.isArray(e.listeners('foo'));
-            assert.strictEquals(e.listeners('foo').length, 1);
-            assert.deepEquals(e.listeners('foo'), [foo]);
+            emitter.on('foo', foo);
+            assert.isArray(emitter.listeners('foo'));
+            assert.strictEquals(emitter.listeners('foo').length, 1);
+            assert.deepEquals(emitter.listeners('foo'), [foo]);
         });
 
         it('is not vulnerable to modifications', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
             function foo() {}
 
-            e.on('foo', foo);
+            emitter.on('foo', foo);
 
-            assert.deepEquals(e.listeners('foo'), [foo]);
+            assert.deepEquals(emitter.listeners('foo'), [foo]);
 
-            e.listeners('foo').length = 0;
-            assert.deepEquals(e.listeners('foo'), [foo]);
+            emitter.listeners('foo').length = 0;
+            assert.deepEquals(emitter.listeners('foo'), [foo]);
         });
     });
 
     describe('EventEmitter#listenerCount', () => {
         it('returns the number of listeners for a given event', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
-            assert.strictEquals(e.listenerCount(), 0);
-            assert.strictEquals(e.listenerCount('foo'), 0);
+            assert.strictEquals(emitter.listenerCount('foo'), 0);
 
-            e.on('foo', () => {});
-            assert.strictEquals(e.listenerCount('foo'), 1);
-            e.on('foo', () => {});
-            assert.strictEquals(e.listenerCount('foo'), 2);
+            emitter.on('foo', () => {});
+            assert.strictEquals(emitter.listenerCount('foo'), 1);
+            emitter.on('foo', () => {});
+            assert.strictEquals(emitter.listenerCount('foo'), 2);
         });
     });
 
     describe('EventEmitter#on', () => {
         it('throws an error if the listener is not a function', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
-            try {
-                e.on('foo', 'bar');
-            } catch (ex) {
-                assert.instanceOf(ex, TypeError);
-                assert.strictEquals(ex.message, 'The listener must be a function');
-                return;
-            }
-
-            throw new Error('oops');
+            assert.throws(
+                () => {
+                    // @ts-expect-error: intentionally incorrect listener
+                    emitter.on('foo', 'bar');
+                },
+                {
+                    matchConstructor: TypeError,
+                    matchMessage: 'The listener must be a function',
+                },
+            );
         });
     });
 
     describe('EventEmitter#once', () => {
         it('only emits it once', () => {
-            var e = new EventEmitter(),
-                calls = 0;
+            const emitter = new EventEmitter();
+            let calls = 0;
 
-            e.once('foo', () => {
+            emitter.once('foo', () => {
                 calls++;
             });
 
-            e.emit('foo');
-            e.emit('foo');
-            e.emit('foo');
-            e.emit('foo');
-            e.emit('foo');
+            emitter.emit('foo');
+            emitter.emit('foo');
+            emitter.emit('foo');
+            emitter.emit('foo');
+            emitter.emit('foo');
 
-            assert.strictEquals(e.listeners('foo').length, 0);
+            assert.strictEquals(emitter.listeners('foo').length, 0);
             assert.strictEquals(calls, 1);
         });
 
         it('only emits once if emits are nested inside the listener', () => {
-            var e = new EventEmitter(),
-                calls = 0;
+            const emitter = new EventEmitter();
+            let calls = 0;
 
-            e.once('foo', () => {
+            emitter.once('foo', () => {
                 calls++;
-                e.emit('foo');
+                emitter.emit('foo');
             });
 
-            e.emit('foo');
-            assert.strictEquals(e.listeners('foo').length, 0);
+            emitter.emit('foo');
+            assert.strictEquals(emitter.listeners('foo').length, 0);
             assert.strictEquals(calls, 1);
         });
 
         it('only emits once for multiple events', () => {
-            var e = new EventEmitter(),
-                multi = 0,
-                foo = 0,
-                bar = 0;
+            const emitter = new EventEmitter();
+            let multi = 0;
+            let foo = 0;
+            let bar = 0;
 
-            e.once('foo', () => {
+            emitter.once('foo', () => {
                 foo++;
             });
 
-            e.once('foo', () => {
+            emitter.once('foo', () => {
                 bar++;
             });
 
-            e.on('foo', () => {
+            emitter.on('foo', () => {
                 multi++;
             });
 
-            e.emit('foo');
-            e.emit('foo');
-            e.emit('foo');
-            e.emit('foo');
-            e.emit('foo');
+            emitter.emit('foo');
+            emitter.emit('foo');
+            emitter.emit('foo');
+            emitter.emit('foo');
+            emitter.emit('foo');
 
-            assert.strictEquals(e.listeners('foo').length, 1);
+            assert.strictEquals(emitter.listeners('foo').length, 1);
             assert.strictEquals(multi, 5);
             assert.strictEquals(foo, 1);
             assert.strictEquals(bar, 1);
@@ -453,7 +464,7 @@ describe('EventEmitter', () => {
             emitter
                 .once(
                     'foo',
-                    function (bar) {
+                    function (this: typeof context, bar) {
                         inner = {
                             bar,
                             context: this,
@@ -469,248 +480,243 @@ describe('EventEmitter', () => {
 
     describe('EventEmitter#removeListener', () => {
         it('removes all listeners when the listener is not specified', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
-            e.on('foo', () => {});
-            e.on('foo', () => {});
+            emitter.on('foo', () => {});
+            emitter.on('foo', () => {});
 
-            assert.strictEquals(e.removeListener('foo'), e);
-            assert.deepEquals(e.listeners('foo'), []);
+            assert.strictEquals(emitter.removeListener('foo'), emitter);
+            assert.deepEquals(emitter.listeners('foo'), []);
         });
 
         it('removes only the listeners matching the specified listener', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
             function foo() {}
             function bar() {}
             function baz() {}
 
-            e.on('foo', foo);
-            e.on('bar', bar);
-            e.on('bar', baz);
+            emitter.on('foo', foo);
+            emitter.on('bar', bar);
+            emitter.on('bar', baz);
 
-            assert.strictEquals(e.removeListener('foo', bar), e);
-            assert.deepEquals(e.listeners('bar'), [
+            assert.strictEquals(emitter.removeListener('foo', bar), emitter);
+            assert.deepEquals(emitter.listeners('bar'), [
                 bar,
                 baz,
             ]);
-            assert.deepEquals(e.listeners('foo'), [foo]);
-            assert.strictEquals(e._eventsCount, 2);
+            assert.deepEquals(emitter.listeners('foo'), [foo]);
+            assert.strictEquals<number, number>(emitter._eventsCount, 2);
 
-            assert.strictEquals(e.removeListener('foo', foo), e);
-            assert.deepEquals(e.listeners('bar'), [
+            assert.strictEquals(emitter.removeListener('foo', foo), emitter);
+            assert.deepEquals(emitter.listeners('bar'), [
                 bar,
                 baz,
             ]);
-            assert.deepEquals(e.listeners('foo'), []);
-            assert.strictEquals(e._eventsCount, 1);
+            assert.deepEquals(emitter.listeners('foo'), []);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
 
-            assert.strictEquals(e.removeListener('bar', bar), e);
-            assert.deepEquals(e.listeners('bar'), [baz]);
-            assert.strictEquals(e._eventsCount, 1);
+            assert.strictEquals(emitter.removeListener('bar', bar), emitter);
+            assert.deepEquals(emitter.listeners('bar'), [baz]);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
 
-            assert.strictEquals(e.removeListener('bar', baz), e);
-            assert.deepEquals(e.listeners('bar'), []);
-            assert.strictEquals(e._eventsCount, 0);
+            assert.strictEquals(emitter.removeListener('bar', baz), emitter);
+            assert.deepEquals(emitter.listeners('bar'), []);
+            assert.strictEquals<number, number>(emitter._eventsCount, 0);
 
-            e.on('foo', foo);
-            e.on('foo', foo);
-            e.on('bar', bar);
+            emitter.on('foo', foo);
+            emitter.on('foo', foo);
+            emitter.on('bar', bar);
 
-            assert.strictEquals(e.removeListener('foo', foo), e);
-            assert.deepEquals(e.listeners('bar'), [bar]);
-            assert.deepEquals(e.listeners('foo'), []);
-            assert.strictEquals(e._eventsCount, 1);
+            assert.strictEquals(emitter.removeListener('foo', foo), emitter);
+            assert.deepEquals(emitter.listeners('bar'), [bar]);
+            assert.deepEquals(emitter.listeners('foo'), []);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
         });
 
         it('removes only the once listeners when using the once flag', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
             function foo() {}
 
-            e.on('foo', foo);
+            emitter.on('foo', foo);
 
             assert.strictEquals(
-                e.removeListener('foo', () => {}, undefined, true),
-                e,
+                emitter.removeListener('foo', () => {}, undefined, true),
+                emitter,
             );
-            assert.deepEquals(e.listeners('foo'), [foo]);
-            assert.strictEquals(e._eventsCount, 1);
+            assert.deepEquals(emitter.listeners('foo'), [foo]);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
 
-            assert.strictEquals(e.removeListener('foo', foo, undefined, true), e);
-            assert.deepEquals(e.listeners('foo'), [foo]);
-            assert.strictEquals(e._eventsCount, 1);
+            assert.strictEquals(emitter.removeListener('foo', foo, undefined, true), emitter);
+            assert.deepEquals(emitter.listeners('foo'), [foo]);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
 
-            assert.strictEquals(e.removeListener('foo', foo), e);
-            assert.deepEquals(e.listeners('foo'), []);
-            assert.strictEquals(e._eventsCount, 0);
+            assert.strictEquals(emitter.removeListener('foo', foo), emitter);
+            assert.deepEquals(emitter.listeners('foo'), []);
+            assert.strictEquals<number, number>(emitter._eventsCount, 0);
 
-            e.once('foo', foo);
-            e.on('foo', foo);
+            emitter.once('foo', foo);
+            emitter.on('foo', foo);
 
             assert.strictEquals(
-                e.removeListener('foo', () => {}, undefined, true),
-                e,
+                emitter.removeListener('foo', () => {}, undefined, true),
+                emitter,
             );
-            assert.deepEquals(e.listeners('foo'), [
+            assert.deepEquals(emitter.listeners('foo'), [
                 foo,
                 foo,
             ]);
-            assert.strictEquals(e._eventsCount, 1);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
 
-            assert.strictEquals(e.removeListener('foo', foo, undefined, true), e);
-            assert.deepEquals(e.listeners('foo'), [foo]);
-            assert.strictEquals(e._eventsCount, 1);
+            assert.strictEquals(emitter.removeListener('foo', foo, undefined, true), emitter);
+            assert.deepEquals(emitter.listeners('foo'), [foo]);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
 
-            e.once('foo', foo);
+            emitter.once('foo', foo);
 
-            assert.strictEquals(e.removeListener('foo', foo), e);
-            assert.deepEquals(e.listeners('foo'), []);
-            assert.strictEquals(e._eventsCount, 0);
+            assert.strictEquals(emitter.removeListener('foo', foo), emitter);
+            assert.deepEquals(emitter.listeners('foo'), []);
+            assert.strictEquals<number, number>(emitter._eventsCount, 0);
         });
 
         it('removes only the listeners matching the correct context', () => {
-            var context = {foo: 'bar'},
-                e = new EventEmitter();
+            const context = {foo: 'bar'},
+                emitter = new EventEmitter();
 
             function foo() {}
             function bar() {}
 
-            e.on('foo', foo, context);
+            emitter.on('foo', foo, context);
 
             assert.strictEquals(
-                e.removeListener('foo', () => {}, context),
-                e,
+                emitter.removeListener('foo', () => {}, context),
+                emitter,
             );
-            assert.deepEquals(e.listeners('foo'), [foo]);
-            assert.strictEquals(e._eventsCount, 1);
+            assert.deepEquals(emitter.listeners('foo'), [foo]);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
 
-            assert.strictEquals(e.removeListener('foo', foo, {baz: 'quux'}), e);
-            assert.deepEquals(e.listeners('foo'), [foo]);
-            assert.strictEquals(e._eventsCount, 1);
+            assert.strictEquals(emitter.removeListener('foo', foo, {baz: 'quux'}), emitter);
+            assert.deepEquals(emitter.listeners('foo'), [foo]);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
 
-            assert.strictEquals(e.removeListener('foo', foo, context), e);
-            assert.deepEquals(e.listeners('foo'), []);
-            assert.strictEquals(e._eventsCount, 0);
+            assert.strictEquals(emitter.removeListener('foo', foo, context), emitter);
+            assert.deepEquals(emitter.listeners('foo'), []);
+            assert.strictEquals<number, number>(emitter._eventsCount, 0);
 
-            e.on('foo', foo, context);
-            e.on('foo', bar);
+            emitter.on('foo', foo, context);
+            emitter.on('foo', bar);
 
-            assert.strictEquals(e.removeListener('foo', foo, {baz: 'quux'}), e);
-            assert.deepEquals(e.listeners('foo'), [
+            assert.strictEquals(emitter.removeListener('foo', foo, {baz: 'quux'}), emitter);
+            assert.deepEquals(emitter.listeners('foo'), [
                 foo,
                 bar,
             ]);
-            assert.strictEquals(e._eventsCount, 1);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
 
-            assert.strictEquals(e.removeListener('foo', foo, context), e);
-            assert.deepEquals(e.listeners('foo'), [bar]);
-            assert.strictEquals(e._eventsCount, 1);
+            assert.strictEquals(emitter.removeListener('foo', foo, context), emitter);
+            assert.deepEquals(emitter.listeners('foo'), [bar]);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
 
-            e.on('foo', bar, context);
+            emitter.on('foo', bar, context);
 
-            assert.strictEquals(e.removeListener('foo', bar), e);
-            assert.deepEquals(e.listeners('foo'), []);
-            assert.strictEquals(e._eventsCount, 0);
+            assert.strictEquals(emitter.removeListener('foo', bar), emitter);
+            assert.deepEquals(emitter.listeners('foo'), []);
+            assert.strictEquals<number, number>(emitter._eventsCount, 0);
         });
     });
 
     describe('EventEmitter#removeAllListeners', () => {
         it('removes all events for the specified events', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
-            e.on('foo', () => {
+            emitter.on('foo', () => {
                 throw new Error('oops');
             });
-            e.on('foo', () => {
+            emitter.on('foo', () => {
                 throw new Error('oops');
             });
-            e.on('bar', () => {
+            emitter.on('bar', () => {
                 throw new Error('oops');
             });
-            e.on('aaa', () => {
+            emitter.on('aaa', () => {
                 throw new Error('oops');
             });
 
-            assert.strictEquals(e.removeAllListeners('foo'), e);
-            assert.strictEquals(e.listeners('foo').length, 0);
-            assert.strictEquals(e.listeners('bar').length, 1);
-            assert.strictEquals(e.listeners('aaa').length, 1);
-            assert.strictEquals(e._eventsCount, 2);
+            assert.strictEquals(emitter.removeAllListeners('foo'), emitter);
+            assert.strictEquals(emitter.listeners('foo').length, 0);
+            assert.strictEquals(emitter.listeners('bar').length, 1);
+            assert.strictEquals(emitter.listeners('aaa').length, 1);
+            assert.strictEquals<number, number>(emitter._eventsCount, 2);
 
-            assert.strictEquals(e.removeAllListeners('bar'), e);
-            assert.strictEquals(e._eventsCount, 1);
-            assert.strictEquals(e.removeAllListeners('aaa'), e);
-            assert.strictEquals(e._eventsCount, 0);
+            assert.strictEquals(emitter.removeAllListeners('bar'), emitter);
+            assert.strictEquals<number, number>(emitter._eventsCount, 1);
+            assert.strictEquals(emitter.removeAllListeners('aaa'), emitter);
+            assert.strictEquals<number, number>(emitter._eventsCount, 0);
 
-            assert.strictEquals(e.emit('foo'), false);
-            assert.strictEquals(e.emit('bar'), false);
-            assert.strictEquals(e.emit('aaa'), false);
+            assert.strictEquals(emitter.emit('foo'), false);
+            assert.strictEquals(emitter.emit('bar'), false);
+            assert.strictEquals(emitter.emit('aaa'), false);
         });
 
         it('just nukes the fuck out of everything', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
-            e.on('foo', () => {
+            emitter.on('foo', () => {
                 throw new Error('oops');
             });
-            e.on('foo', () => {
+            emitter.on('foo', () => {
                 throw new Error('oops');
             });
-            e.on('bar', () => {
+            emitter.on('bar', () => {
                 throw new Error('oops');
             });
-            e.on('aaa', () => {
+            emitter.on('aaa', () => {
                 throw new Error('oops');
             });
 
-            assert.strictEquals(e.removeAllListeners(), e);
-            assert.strictEquals(e.listeners('foo').length, 0);
-            assert.strictEquals(e.listeners('bar').length, 0);
-            assert.strictEquals(e.listeners('aaa').length, 0);
-            assert.strictEquals(e._eventsCount, 0);
+            assert.strictEquals(emitter.removeAllListeners(), emitter);
+            assert.strictEquals(emitter.listeners('foo').length, 0);
+            assert.strictEquals(emitter.listeners('bar').length, 0);
+            assert.strictEquals(emitter.listeners('aaa').length, 0);
+            assert.strictEquals<number, number>(emitter._eventsCount, 0);
 
-            assert.strictEquals(e.emit('foo'), false);
-            assert.strictEquals(e.emit('bar'), false);
-            assert.strictEquals(e.emit('aaa'), false);
+            assert.strictEquals(emitter.emit('foo'), false);
+            assert.strictEquals(emitter.emit('bar'), false);
+            assert.strictEquals(emitter.emit('aaa'), false);
         });
     });
 
     describe('EventEmitter#eventNames', () => {
         it('returns an empty array when there are no events', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
-            assert.deepEquals(e.eventNames(), []);
+            assert.deepEquals(emitter.eventNames(), []);
 
-            e.on('foo', () => {});
-            e.removeAllListeners('foo');
+            emitter.on('foo', () => {});
+            emitter.removeAllListeners('foo');
 
-            assert.deepEquals(e.eventNames(), []);
+            assert.deepEquals(emitter.eventNames(), []);
         });
 
         it('returns an array listing the events that have listeners', () => {
-            var e = new EventEmitter(),
-                original;
+            const emitter = new EventEmitter();
 
             function bar() {}
 
-            e.on('foo', () => {});
-            e.on('bar', bar);
+            emitter.on('foo', () => {});
+            emitter.on('bar', bar);
 
-            try {
-                assert.deepEquals(e.eventNames(), [
-                    'foo',
-                    'bar',
-                ]);
-                e.removeListener('bar', bar);
-                assert.deepEquals(e.eventNames(), ['foo']);
-            } catch (ex) {
-                throw ex;
-            }
+            assert.deepEquals(emitter.eventNames(), [
+                'foo',
+                'bar',
+            ]);
+            emitter.removeListener('bar', bar);
+            assert.deepEquals(emitter.eventNames(), ['foo']);
         });
 
         it('does not return inherited property identifiers', () => {
-            var e = new EventEmitter();
+            const emitter = new EventEmitter();
 
             class Collection {
                 foo() {
@@ -718,30 +724,29 @@ describe('EventEmitter', () => {
                 }
             }
 
-            e._events = new Collection();
+            emitter._events = new Collection() as any;
 
-            assert.strictEquals(e._events.foo(), 'foo');
-            assert.deepEquals(e.eventNames(), []);
+            assert.strictEquals((emitter._events.foo as any)(), 'foo');
+            assert.deepEquals(emitter.eventNames(), []);
         });
 
-        if ('undefined' !== typeof Symbol)
-            it('includes ES6 symbols', () => {
-                var e = new EventEmitter(),
-                    s = Symbol('s');
+        it('includes ES6 symbols', () => {
+            const emitter = new EventEmitter(),
+                s = Symbol('s');
 
-                function foo() {}
+            function foo() {}
 
-                e.on('foo', foo);
-                e.on(s, () => {});
+            emitter.on('foo', foo);
+            emitter.on(s, () => {});
 
-                assert.deepEquals(e.eventNames(), [
-                    'foo',
-                    s,
-                ]);
+            assert.deepEquals(emitter.eventNames(), [
+                'foo',
+                s,
+            ]);
 
-                e.removeListener('foo', foo);
+            emitter.removeListener('foo', foo);
 
-                assert.deepEquals(e.eventNames(), [s]);
-            });
+            assert.deepEquals(emitter.eventNames(), [s]);
+        });
     });
 });
