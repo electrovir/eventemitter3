@@ -1,5 +1,5 @@
 {
-    "name": "eventemitter3",
+    "name": "@electrovir/eventemitter3",
     "version": "5.0.1",
     "description": "drop-in replacement for eventemitter3 with fix exports and modern syntax",
     "keywords": [
