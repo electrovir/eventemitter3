@@ -365,9 +365,9 @@ describe('EventEmitter', () => {
 
             assert.strictEquals(emitter.listenerCount('foo'), 0);
 
-            emitter.on('foo', () => {});
+            emitter.addListener('foo', () => {});
             assert.strictEquals(emitter.listenerCount('foo'), 1);
-            emitter.on('foo', () => {});
+            emitter.addListener('foo', () => {});
             assert.strictEquals(emitter.listenerCount('foo'), 2);
         });
     });
@@ -488,7 +488,20 @@ describe('EventEmitter', () => {
             assert.strictEquals(emitter.removeListener('foo'), emitter);
             assert.deepEquals(emitter.listeners('foo'), []);
         });
+        it('is aliased to off', () => {
+            const emitter = new EventEmitter();
 
+            emitter.on('foo', () => {});
+            emitter.on('foo', () => {});
+
+            assert.strictEquals(emitter.off('foo'), emitter);
+            assert.deepEquals(emitter.listeners('foo'), []);
+        });
+        it('handles an event type with no listeners', () => {
+            const emitter = new EventEmitter();
+
+            assert.strictEquals(emitter.removeListener('fffffffffff'), emitter);
+        });
         it('removes only the listeners matching the specified listener', () => {
             const emitter = new EventEmitter();
 
